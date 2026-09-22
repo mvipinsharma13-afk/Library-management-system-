@@ -1,0 +1,387 @@
+The complete single-file Java implementation used for the mini project is provided below.
+import java.util.*;
+class Book {
+int id;
+String title;
+String author;
+boolean issued;
+int issuedTo;
+Book(int id, String title, String author) {
+this.id = id;
+this.title = title;
+this.author = author;
+this.issued = false;
+this.issuedTo = -1;
+}
+}
+class Member {
+int id;
+String name;
+Member(int id, String name) {
+this.id = id;
+this.name = name;
+}
+}
+class Transaction {
+String type;
+int bookId;
+int memberId;
+Transaction(String type, int bookId, int memberId) {
+this.type = type;
+this.bookId = bookId;
+this.memberId = memberId;
+}
+}
+class Reservation {
+int bookId;
+int memberId;
+Reservation(int bookId, int memberId) {
+this.bookId = bookId;
+this.memberId = memberId;
+}
+}
+public class Main {
+static Scanner sc = new Scanner(System.in);
+static ArrayList<Book> books = new ArrayList<>();
+static ArrayList<Member> members = new ArrayList<>();
+static LinkedList<Transaction> transactions = new LinkedList<>();
+static Stack<Integer> recentlyReturned = new Stack<>();
+static Queue<Reservation> reservationQueue = new LinkedList<>();
+// ================= BOOK MANAGEMENT =================
+static void addBook() {
+System.out.println("\n--- Add Book ---");
+System.out.print("Enter Book ID: ");
+int id = sc.nextInt();
+sc.nextLine();
+for (Book b : books) {
+if (b.id == id) {
+System.out.println("Book ID already exists.");
+return;
+}
+}
+System.out.print("Enter Book Title: ");
+String title = sc.nextLine();
+System.out.print("Enter Author Name: ");
+String author = sc.nextLine();
+books.add(new Book(id, title, author));
+System.out.println("Book added successfully.");
+}
+static void displayBooks() {
+System.out.println("\n--- All Books ---");
+
+
+System.out.println("No books available.");
+return;
+}
+for (Book b : books) {
+System.out.println("----------------------------");
+System.out.println("Book ID : " + b.id);
+System.out.println("Title   : " + b.title);
+System.out.println("Author  : " + b.author);
+if (b.issued)
+System.out.println("Status  : Issued to Member " + b.issuedTo);
+else
+System.out.println("Status  : Available");
+}
+System.out.println("----------------------------");
+}
+// ================= MEMBER MANAGEMENT =================
+static void addMember() {
+System.out.println("\n--- Add Member ---");
+System.out.print("Enter Member ID: ");
+int id = sc.nextInt();
+sc.nextLine();
+for (Member m : members) {
+if (m.id == id) {
+System.out.println("Member ID already exists.");
+return;
+}
+}
+System.out.print("Enter Member Name: ");
+String name = sc.nextLine();
+members.add(new Member(id, name));
+System.out.println("Member added successfully.");
+}
+static void displayMembers() {
+System.out.println("\n--- All Members ---");
+if (members.isEmpty()) {
+System.out.println("No members registered.");
+return;
+}
+for (Member m : members) {
+System.out.println("----------------------------");
+System.out.println("Member ID   : " + m.id);
+System.out.println("Member Name : " + m.name);
+}
+System.out.println("----------------------------");
+}
+static boolean memberExists(int memberId) {
+for (Member m : members) {
+if (m.id == memberId)
+return true;
+}
+return false;
+}
+// ================= ISSUE & RETURN =================
+static void issueBook() {
+System.out.println("\n--- Issue Book ---");
+System.out.print("Enter Book ID: ");
+int bookId = sc.nextInt();
+System.out.print("Enter Member ID: ");
+int memberId = sc.nextInt();
+if (!memberExists(memberId)) {
+System.out.println("Member does not exist.");
+return;
+}
+for (Book b : books) {
+if (b.id == bookId) {
+if (b.issued) {
+System.out.println("Book is already issued.");
+return;
+}
+b.issued = true;
+b.issuedTo = memberId;
+transactions.add(new Transaction("ISSUED", bookId, memberId));
+System.out.println("Book issued successfully.");
+return;
+}
+
+
+}
+System.out.println("Book not found.");
+}
+static void returnBook() {
+System.out.println("\n--- Return Book ---");
+System.out.print("Enter Book ID: ");
+int bookId = sc.nextInt();
+for (Book b : books) {
+if (b.id == bookId) {
+if (!b.issued) {
+System.out.println("This book is not currently issued.");
+return;
+}
+int memberId = b.issuedTo;
+b.issued = false;
+b.issuedTo = -1;
+recentlyReturned.push(bookId);
+transactions.add(new Transaction("RETURNED", bookId, memberId));
+System.out.println("Book returned successfully.");
+checkReservation(bookId);
+return;
+}
+}
+System.out.println("Book not found.");
+}
+static void viewIssuedBooks() {
+System.out.println("\n--- Issued Books ---");
+boolean found = false;
+for (Book b : books) {
+if (b.issued) {
+System.out.println("Book ID: " + b.id +
+" | Title: " + b.title +
+" | Member ID: " + b.issuedTo);
+found = true;
+}
+}
+if (!found)
+System.out.println("No books are currently issued.");
+}
+// ================= SEARCH & SORT =================
+static void searchBook() {
+System.out.println("\n--- Search Book ---");
+System.out.print("Enter Book ID: ");
+int id = sc.nextInt();
+boolean found = false;
+for (Book b : books) {
+if (b.id == id) {
+System.out.println("\nBook Found");
+System.out.println("Book ID : " + b.id);
+System.out.println("Title   : " + b.title);
+System.out.println("Author  : " + b.author);
+if (b.issued)
+System.out.println("Status  : Issued to Member " + b.issuedTo);
+else
+System.out.println("Status  : Available");
+found = true;
+break;
+}
+}
+if (!found)
+System.out.println("Book not found.");
+}
+static void sortBooksById() {
+System.out.println("\n--- Sort Books by ID ---");
+if (books.size() < 2) {
+System.out.println("Not enough books to sort.");
+return;
+}
+for (int i = 0; i < books.size() - 1; i++) {
+for (int j = 0; j < books.size() - i - 1; j++) {
+if (books.get(j).id > books.get(j + 1).id) {
+Book temp = books.get(j);
+
+
+books.set(j, books.get(j + 1));
+books.set(j + 1, temp);
+}
+}
+}
+System.out.println("Books sorted successfully.");
+}
+// ================= STACK & QUEUE =================
+static void addReservation() {
+System.out.println("\n--- Book Reservation ---");
+System.out.print("Enter Book ID: ");
+int bookId = sc.nextInt();
+System.out.print("Enter Member ID: ");
+int memberId = sc.nextInt();
+if (!memberExists(memberId)) {
+System.out.println("Member does not exist.");
+return;
+}
+boolean found = false;
+for (Book b : books) {
+if (b.id == bookId) {
+found = true;
+if (!b.issued) {
+System.out.println("Book is available. No reservation needed.");
+return;
+}
+break;
+}
+}
+if (!found) {
+System.out.println("Book not found.");
+return;
+}
+reservationQueue.offer(new Reservation(bookId, memberId));
+System.out.println("Reservation added successfully.");
+}
+static void processReservation() {
+System.out.println("\n--- Process Reservation ---");
+if (reservationQueue.isEmpty()) {
+System.out.println("No reservation requests.");
+return;
+}
+Reservation r = reservationQueue.peek();
+System.out.println("Book ID   : " + r.bookId);
+System.out.println("Member ID : " + r.memberId);
+if (isBookAvailable(r.bookId)) {
+reservationQueue.poll();
+System.out.println("Reservation processed successfully.");
+} else {
+System.out.println("Book is still issued.");
+}
+}
+static boolean isBookAvailable(int bookId) {
+for (Book b : books) {
+if (b.id == bookId)
+return !b.issued;
+}
+return false;
+}
+static void checkReservation(int bookId) {
+if (reservationQueue.isEmpty())
+return;
+Reservation r = reservationQueue.peek();
+if (r.bookId == bookId) {
+System.out.println("A reservation exists for this book.");
+System.out.println("Reserved by Member ID: " + r.memberId);
+}
+}
+static void recentlyReturnedBooks() {
+System.out.println("\n--- Recently Returned Books (Stack) ---");
+if (recentlyReturned.isEmpty()) {
+System.out.println("No recently returned books.");
+return;
+
+
+}
+for (int i = recentlyReturned.size() - 1; i >= 0; i--)
+System.out.println("Book ID: " + recentlyReturned.get(i));
+}
+static void transactionHistory() {
+System.out.println("\n--- Transaction History (Linked List) ---");
+if (transactions.isEmpty()) {
+System.out.println("No transactions available.");
+return;
+}
+for (Transaction t : transactions) {
+System.out.println(t.type +
+" | Book ID: " + t.bookId +
+" | Member ID: " + t.memberId);
+}
+}
+// ================= STATISTICS =================
+static void libraryStatistics() {
+System.out.println("\n--- Library Statistics ---");
+int issued = 0;
+for (Book b : books) {
+if (b.issued)
+issued++;
+}
+int available = books.size() - issued;
+System.out.println("Total Books          : " + books.size());
+System.out.println("Available Books      : " + available);
+System.out.println("Issued Books         : " + issued);
+System.out.println("Total Members        : " + members.size());
+System.out.println("Transactions         : " + transactions.size());
+System.out.println("Pending Reservations : " + reservationQueue.size());
+}
+// ================= MAIN MENU =================
+static void showMenu() {
+System.out.println("\n==============================================");
+System.out.println("          LIBRARY MANAGEMENT SYSTEM");
+System.out.println("==============================================");
+System.out.println("1.  Add Book");
+System.out.println("2.  Display All Books");
+System.out.println("3.  Search Book");
+System.out.println("4.  Add Member");
+System.out.println("5.  Display Members");
+System.out.println("6.  Issue Book");
+System.out.println("7.  Return Book");
+System.out.println("8.  View Issued Books");
+System.out.println("9.  Add Book Reservation");
+System.out.println("10. Process Reservation");
+System.out.println("11. Recently Returned Books");
+System.out.println("12. Transaction History");
+System.out.println("13. Sort Books by ID");
+System.out.println("14. Library Statistics");
+System.out.println("15. Exit");
+System.out.println("==============================================");
+}
+public static void main(String[] args) {
+while (true) {
+showMenu();
+System.out.print("Enter your choice: ");
+int choice = sc.nextInt();
+switch (choice) {
+case 1: addBook(); break;
+case 2: displayBooks(); break;
+case 3: searchBook(); break;
+case 4: addMember(); break;
+case 5: displayMembers(); break;
+case 6: issueBook(); break;
+case 7: returnBook(); break;
+case 8: viewIssuedBooks(); break;
+case 9: addReservation(); break;
+case 10: processReservation(); break;
+case 11: recentlyReturnedBooks(); break;
+case 12: transactionHistory(); break;
+case 13: sortBooksById(); break;
+case 14: libraryStatistics(); break;
+case 15:
+System.out.println(
+"Thank you for using Library Management System!"
+);
+sc.close();
+
+
+return;
+default:
+System.out.println("Invalid choice. Please try again.");
+}
+}
+}
+}
+
